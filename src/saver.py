@@ -1,59 +1,39 @@
-import requests
-from bs4 import BeautifulSoup
+# saver.py - Responsável por salvar os dados no CSV
+import logging
 import pandas as pd
 from datetime import datetime
 import os
 
-# Url de teste
-url = "https://quotes.toscrape.com/"
+# Configuração do logger
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Fazendo requisição
-response = requests.get(url)
+def salvar_dados(dados, pasta="data", arquivo="dados.csv"):
+    """
+    Função para salvar dados extraídos em um arquivo CSV.
+    :param dados: Lista de dados para salvar.
+    :param pasta: Nome da pasta onde o arquivo será salvo.
+    :param arquivo: Nome do arquivo CSV.
+    """
+    if not dados:
+        logging.warning("Nenhum dado para salvar.")
+        return
 
-if response.status_code == 200:
-    print("Pagina acessada com sucesso.")
-
-    # Transformando o HTML em objeto BeautifulSoup
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Buscando todas as frases dentro da classe 'text'
-    quotes = soup.find_all("span", class_="text")
-
-    # Lista para armazenamento de dados
-    data = []
-
-    # Loop para extrair dados
-    for quote in quotes:
-        frase = quote.text
-        data_atual = datetime.now().strftime("%Y-%m-%d")
-        hora_atual = datetime.now().strftime("%H:%M:%S")
-        data.append([frase, data_atual, hora_atual])
-
-    # Criando o dataframe
-    df = pd.DataFrame(data, columns=["Frase", "Data", "Hora"])
-
-    # Caminho raiz do repositório (sempre um nível acima da pasta 'src')
-    repo_raiz = os.path.dirname(os.path.dirname(__file__))
-
-    # Caminho da pasta data dentro do repositório
-    pasta = os.path.join(repo_raiz, "data")
-
-    # Criando pasta se não existir
+    # Cria a pasta se não existir
     if not os.path.exists(pasta):
         os.makedirs(pasta)
-        print("Pasta 'data' criada automaticamente.")
+        logging.info(f"Pasta '{pasta}' criada automaticamente.")
 
-    # Caminho do arquivo
-    caminho_arquivo = os.path.join(pasta, "dados.csv")
+    caminho_arquivo = os.path.join(pasta, arquivo)
+    data_atual = datetime.now().strftime("%Y-%m-%d")
+    hora_atual = datetime.now().strftime("%H:%M:%S")
+    df = pd.DataFrame([[frase, data_atual, hora_atual] for frase in dados], columns=["Frase", "Data", "Hora"])
 
-    # Criando o arquivo dados.csv se não existir
+    # Cria o arquivo se não existir ou adiciona novos dados
     if not os.path.exists(caminho_arquivo):
         df.to_csv(caminho_arquivo, index=False)
-        print("Arquivo 'dados.csv' criado automaticamente.")
+        logging.info(f"Arquivo '{arquivo}' criado automaticamente.")
     else:
         df.to_csv(caminho_arquivo, index=False, mode="a", header=False)
-        print("Dados adicionados no arquivo 'dados.csv'")
+        logging.info(f"Dados adicionados no arquivo '{arquivo}'.")
 
-    print(f"{len(quotes)} frases salvas no CSV com sucesso!")
-else:
-    print("Não foi possível acessar a página.")
+    logging.info(f"{len(dados)} frases salvas no CSV com sucesso!")
